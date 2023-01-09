@@ -1,0 +1,47 @@
+version: '3.9'
+
+services:
+  broker:
+    container_name: broker
+    image: eclipse-mosquitto:latest
+    ports:
+      - '1883:1883'
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+    networks:
+      - broker_network
+    restart: always
+  
+  adapter:
+    container_name: adapter
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - broker
+    environment:
+      - DEBUG_DATA_FLOW=true
+    networks:
+      - db_network
+      - broker_network
+    restart: always
+  
+  influxdb:
+    container_name: influxdb
+    image: influxdb:latest
+    ports:
+      - '8086:8086'
+    volumes:
+      - influxdb-data:/var/lib/influxdb
+    networks:
+      - db_network
+    restart: always
+
+volumes:
+  influxdb-data:
+
+networks:
+  broker_network:
+  adapter_network:
+  db_network:
+  
