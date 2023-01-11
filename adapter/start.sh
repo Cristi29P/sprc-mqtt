@@ -1,11 +1,14 @@
 #!/bin/sh
 
-while [ 1 ]; do
-	nc -z sprc3_broker 1883 2> /dev/null \
-	&& nc -z sprc3_influxdb 8086 2> /dev/null \
-	&& break;
+check_service() {
+    service=$1
+    port=$2
+    while ! nc -z "$service" "$port" 2>/dev/null; do
+        sleep 1
+    done
+}
 
-	sleep 1;
-done
+check_service "sprc3_broker" 1883
+check_service "sprc3_influxdb" 8086
 
 python3 -u adapter.py
