@@ -130,3 +130,6 @@ dmypy.json
 .vscode/settings.json
 TODO
 clean_docker.sh
+testing/client_publish.py
+testing/device.py
+testing/test_client.py

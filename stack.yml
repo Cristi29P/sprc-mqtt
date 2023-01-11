@@ -6,7 +6,7 @@ services:
     ports:
       - '1883:1883'
     volumes:
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./broker/mosquitto.conf:/mosquitto/config/mosquitto.conf
     networks:
       - broker_network
     restart: always
@@ -15,12 +15,15 @@ services:
     image: adapter
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: ./adapter/Dockerfile
     depends_on:
       - broker  
       - influxdb   
     environment:
       - DEBUG_DATA_FLOW=true
+      - INFLUXDB_HOST=sprc3_influxdb
+      - BROKER_HOST=sprc3_broker
+      - DB_NAME=influx_db
     networks:
       - db_network
       - broker_network
@@ -50,6 +53,7 @@ services:
       - grafana_network    
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./grafana/:/etc/grafana/provisioning
     restart: always
 
 volumes:

@@ -12,6 +12,8 @@ logging.basicConfig(format='%(asctime)s %(message)s',
 def my_log(logged_msg):
     if getenv('DEBUG_DATA_FLOW') == 'true':
         logging.info(logged_msg)
+    
+    return True
 
 def on_connect(client, userdata, flags, rc):
     client.subscribe("#")
