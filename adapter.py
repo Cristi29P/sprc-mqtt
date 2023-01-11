@@ -47,7 +47,7 @@ def process_message(msg, userdata):
             },
             'time': timestamp.strftime('%Y-%m-%dT%H:%M:%S%z'),
             'fields': {
-                'value': val # float
+                'value': val
             }
         } for key, val in payload.items() if isinstance(val, (int, float))
         if my_log(f'{location}.{station}.{key} {val}')
