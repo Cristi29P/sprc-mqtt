@@ -1,0 +1,70 @@
+344C1 Paris Cristian-Tanase
+
+
+Cum se ruleaza:
+    - Pentru a porni stack-ul se ruleaza scriptul inclus in arhiva, run.sh
+    - Acesta va face build la tot ce este necesar si va porni stack-ul de servicii
+    - Este necesar ca in unele situatii sa se execute 'docker swarm init' pentru ca 'docker stack deploy' sa functioneze
+    - Pentru a opri stack-ul, se poate executa 'docker stack rm sprc3'
+    - Pentru a reporni stack-ul, se executa 'docker stack deploy -c stack.yml sprc3'
+
+Structura aplicatiei:
+    - Broker:
+        - Este vorba despre eclipse-mosquitto, folosit si in cadrul laboratorului.
+        - Portul expus este 1883.
+
+
+    - Adaptor:
+        - Este un program scris in python folosind biblioteca de mqtt, paho-mqtt, pe care am folosit-o si in cadrul laboratorului.
+        - La pornirea acestui container, se ruleaza mai intai un script bash care verifica daca mai intai au pornit baza de date
+            si brokerul mosquitto, pentru ca altfel exista sansa ca programul sa incerce sa se conecteze mult prea repede 
+            si sa logheze doar erori.
+        - Odata ce programul porneste se conecteaza la baza de date si brokerul definite in variabilele de mediu.
+        - Acesta isi da subscribe pe toate topicurile la broker si actioneaza ca un intermediar care se ocupa de preluarea si introducerea
+            tuturor mesajelor care ajung la broker, in baza de date.
+        - Cand un mesaj este primit, este verificat sa respecte formatul din enunt, altfel este ignorat.
+        - Payload-urile mesajelor acceptate sunt procesate si sunt inserate in baza de date folosind JSON Protocol Format.
+        - In mod normal, mesajele pot fi introduse sub un format liniar (vezi link 2):
+            |measurement|,tag_set| |field_set| |timestamp|
+        - In cazul meu, am ales forma JSON a protocolului, pentru ca mi-a fost mai usor sa lucrez in python cu acesta si codul este
+        mult mai lizibil. Exemplu de folosire: https://influxdb-python.readthedocs.io/en/latest/examples.html
+        {
+            'measurement': f'{station}.{key}',
+            'tags': {
+                'location': location,
+                'station': station
+            },
+            'fields': {
+                'value': val
+            },
+            'timestamp': timestamp.strftime('%Y-%m-%dT%H:%M:%S%z')
+        }
+        - Am stocat in tags locatia si statia, pentru a le folosi in cadrul dashboard-urilor, iar measurement are formatul cerut din enunt
+        pentru seriile de timp, <STATIE>.<METRICA>, pentru utilizarea mai facila in cadrul Grafana, la afisarea seriilor de timp.
+        
+    
+    - Baza de date (InfluxDB):
+        - Am folosit imaginea de docker cu versiunea 1.8, pentru ca nu necesita autentificarea folosind token si a fost
+        mai usor de integrat in cadrul adaptorului.
+        - Portul expus este 8086.
+        - Retentia datelor pentru baza de date a fost configurata in adaptorul scris in python. Vezi link 2.
+            'create_retention_policy('unlimited', 'INF', 2, default=True)'
+        - Volumul folosit de aceasta este precizat in stack.
+
+
+    Grafana:
+        - Am folosit ultima versiune de imagine pentru grafana. 
+        - Portul expus pentru conectarea din browser este 80.
+        - De asemenea, am folosit grafana-provisioning pentru a furniza serviciului configuratiile pentru dashboardurile cerute
+        si pentru a se conecta automat la sursa de date. Vezi link 3.
+        - Volumul folosit de aceasta este precizat in stack.
+
+
+    Toate variabilele de mediu folosite de componente au fost declarate in stack.yml. 
+
+
+Linkuri utile:
+    Link 1: https://pypi.org/project/paho-mqtt/
+    Link 2: https://influxdb-python.readthedocs.io/en/latest/api-documentation.html
+    Link 3: https://grafana.com/docs/grafana/latest/administration/provisioning/
+    Link 4: https://docs.influxdata.com/influxdb/v1.8/write_protocols/line_protocol_tutorial/
