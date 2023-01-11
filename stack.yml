@@ -2,7 +2,6 @@ version: '3.9'
 
 services:
   broker:
-    container_name: broker
     image: eclipse-mosquitto:latest
     ports:
       - '1883:1883'
@@ -13,12 +12,13 @@ services:
     restart: always
   
   adapter:
-    container_name: adapter
+    image: adapter
     build:
       context: .
       dockerfile: Dockerfile
     depends_on:
-      - broker
+      - broker  
+      - influxdb   
     environment:
       - DEBUG_DATA_FLOW=true
     networks:
@@ -27,21 +27,37 @@ services:
     restart: always
   
   influxdb:
-    container_name: influxdb
-    image: influxdb:latest
+    image: influxdb:1.8
     ports:
       - '8086:8086'
     volumes:
       - influxdb-data:/var/lib/influxdb
     networks:
       - db_network
+      - grafana_network
+    restart: always
+  
+  grafana:
+    image: grafana/grafana:latest
+    depends_on:
+      - influxdb
+    ports:
+      - '80:3000'
+    environment:
+      - GF_SECURITY_ADMIN_USER=asistent
+      - GF_SECURITY_ADMIN_PASSWORD=grafanaSPRC2021
+    networks:
+      - grafana_network    
+    volumes:
+      - grafana-data:/var/lib/grafana
     restart: always
 
 volumes:
   influxdb-data:
+  grafana-data:
 
 networks:
   broker_network:
-  adapter_network:
   db_network:
+  grafana_network:
   
